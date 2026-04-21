@@ -1,0 +1,64 @@
+# Dependencies
+backend/node_modules/
+frontend/node_modules/
+
+# Build output
+backend/dist/
+frontend/dist/
+frontend/dist-ssr/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Environment files
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test and coverage output
+coverage/
+.coverage/
+.nyc_output/
+
+# Runtime/cache/temp files
+.cache/
+tmp/
+temp/
+*.tmp
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# Local tooling/state
+.claude/
+.playwright-mcp/
+
+# Local progress/debug artifacts
+claude_progress.md
+*.pid
+
+# Local screenshots/debug captures at repo root
+fiu-hold-amber-state.png
+green-eligible-state.png
+red-regression-state.png

@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ZIMRA_OFFICER
+  DEALER
+  CVR_OFFICER
+  FIU_ANALYST
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DealerStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum VehicleStatus {
+  CLEARED
+  INVENTORY
+  SOLD
+  REGISTERED
+  STR_FLAGGED
+}
+
+enum PaymentType {
+  CASH
+  BANK_TRANSFER
+  FINANCE
+}
+
+enum StrSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum StrStatus {
+  PENDING
+  UNDER_REVIEW
+  DISMISSED
+  ESCALATED
+}
+
+enum RegistrationStatus {
+  APPROVED
+  BLOCKED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model Dealer {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(255)
+  licenseNumber   String            @unique(map: "uq_dealers_license_number") @map("license_number") @db.VarChar(100)
+  status          DealerStatus      @default(ACTIVE)
+  address         String            @db.Text
+  contactInfo     String            @map("contact_info") @db.VarChar(255)
+  approvedAt      DateTime          @map("approved_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  users           User[]
+  vehicles        Vehicle[]
+  sales           SaleTransaction[]
+  strAlerts       StrAlert[]
+
+  @@map("dealers")
+}
+
+model User {
+  id             Int          @id @default(autoincrement())
+  fullName       String       @map("full_name") @db.VarChar(255)
+  role           UserRole
+  agency         String       @db.VarChar(100)
+  username       String       @unique(map: "uq_users_username") @db.VarChar(100)
+  passwordHash   String       @map("password_hash") @db.VarChar(255)
+  dealershipId   Int?         @map("dealership_id")
+  status         UserStatus   @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  dealership      Dealer?      @relation(fields: [dealershipId], references: [id])
+  importRecords  ImportRecord[]
+  registrations  RegistrationRecord[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model Vehicle {
+  id                Int                  @id @default(autoincrement())
+  vin               String               @unique(map: "uq_vehicles_vin") @db.VarChar(17)
+  make              String               @db.VarChar(100)
+  model             String               @db.VarChar(100)
+  declaredValue     Decimal              @map("declared_value") @db.Decimal(12, 2)
+  countryOfOrigin   String               @map("country_of_origin") @db.VarChar(100)
+  importDate        DateTime             @map("import_date") @db.Date
+  dealershipId      Int                  @map("dealership_id")
+  status            VehicleStatus
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  dealership        Dealer               @relation(fields: [dealershipId], references: [id])
+  importRecords     ImportRecord[]
+  sales             SaleTransaction[]
+  strAlerts         StrAlert[]
+  registrations     RegistrationRecord[]
+
+  @@map("vehicles")
+}
+
+model ImportRecord {
+  id          Int       @id @default(autoincrement())
+  vehicleId   Int       @map("vehicle_id")
+  officerId   Int       @map("officer_id")
+  borderPost  String    @map("border_post") @db.VarChar(100)
+  timestamp   DateTime
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  vehicle      Vehicle   @relation(fields: [vehicleId], references: [id])
+  officer      User      @relation(fields: [officerId], references: [id])
+
+  @@map("import_records")
+}
+
+model Buyer {
+  id                 Int                @id @default(autoincrement())
+  fullName           String             @map("full_name") @db.VarChar(255)
+  nationalId         String             @unique(map: "uq_buyers_national_id") @map("national_id") @db.VarChar(50)
+  contactDetails     String             @map("contact_details") @db.VarChar(255)
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  sales              SaleTransaction[]
+  beneficialOwners   BeneficialOwner[]
+  strAlerts          StrAlert[]
+  registrations      RegistrationRecord[]
+
+  @@map("buyers")
+}
+
+model SaleTransaction {
+  id                  Int                 @id @default(autoincrement())
+  vehicleId           Int                 @map("vehicle_id")
+  dealershipId        Int                 @map("dealership_id")
+  buyerId             Int                 @map("buyer_id")
+  salePrice           Decimal             @map("sale_price") @db.Decimal(12, 2)
+  paymentType         PaymentType         @map("payment_type")
+  proofOfPayment      String              @map("proof_of_payment") @db.VarChar(500)
+  saleDate            DateTime            @map("sale_date") @db.Date
+  isActingForAnother  Boolean             @default(false) @map("is_acting_for_another")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  vehicle             Vehicle             @relation(fields: [vehicleId], references: [id])
+  dealership          Dealer              @relation(fields: [dealershipId], references: [id])
+  buyer               Buyer               @relation(fields: [buyerId], references: [id])
+
+  @@map("sale_transactions")
+}
+
+model BeneficialOwner {
+  id                Int       @id @default(autoincrement())
+  linkedBuyerId     Int       @map("linked_buyer_id")
+  fullName          String    @map("full_name") @db.VarChar(255)
+  nationalId        String    @map("national_id") @db.VarChar(50)
+  relationshipType  String    @map("relationship_type") @db.VarChar(100)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  buyer             Buyer     @relation(fields: [linkedBuyerId], references: [id])
+
+  @@map("beneficial_owners")
+}
+
+model StrAlert {
+  id                Int         @id @default(autoincrement())
+  alertType         String      @map("alert_type") @db.VarChar(50)
+  sourceRecordId    Int         @map("source_record_id")
+  sourceEntityType  String      @map("source_entity_type") @db.VarChar(50)
+  reason            String      @db.Text
+  severity          StrSeverity
+  status            StrStatus   @default(PENDING)
+  vehicleId         Int?        @map("vehicle_id")
+  dealershipId      Int?        @map("dealership_id")
+  buyerId           Int?        @map("buyer_id")
+  transactionValue  Decimal?    @map("transaction_value") @db.Decimal(12, 2)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  vehicle           Vehicle?    @relation(fields: [vehicleId], references: [id])
+  dealership        Dealer?     @relation(fields: [dealershipId], references: [id])
+  buyer             Buyer?      @relation(fields: [buyerId], references: [id])
+
+  @@map("str_alerts")
+}
+
+model RegistrationRecord {
+  id                Int                 @id @default(autoincrement())
+  vehicleId         Int                 @map("vehicle_id")
+  buyerId           Int                 @map("buyer_id")
+  officerId         Int                 @map("officer_id")
+  registrationDate  DateTime            @map("registration_date") @db.Date
+  status            RegistrationStatus
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  vehicle           Vehicle             @relation(fields: [vehicleId], references: [id])
+  buyer             Buyer               @relation(fields: [buyerId], references: [id])
+  officer           User                @relation(fields: [officerId], references: [id])
+
+  @@map("registration_records")
+}
+
+model AuditLog {
+  id           Int          @id @default(autoincrement())
+  userId       Int          @map("user_id")
+  role         String       @db.VarChar(50)
+  action       AuditAction
+  entityType   String       @map("entity_type") @db.VarChar(50)
+  entityId     Int          @map("entity_id")
+  beforeValue  Json?        @map("before_value")
+  afterValue   Json?        @map("after_value")
+  reason       String?      @db.Text
+  timestamp    DateTime
+  createdAt    DateTime     @default(now()) @map("created_at")
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model IdempotencyKey {
+  id            Int       @id @default(autoincrement())
+  userId        Int?      @map("user_id")
+  route         String    @db.VarChar(255)
+  method        String    @db.VarChar(10)
+  idempotencyKey String   @map("idempotency_key") @db.VarChar(255)
+  responseCode  Int       @map("response_code")
+  responseBody  Json      @map("response_body")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, route, method, idempotencyKey], map: "uq_idempotency_request")
+  @@map("idempotency_keys")
+}
