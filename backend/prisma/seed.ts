@@ -1,9 +1,21 @@
-import { PrismaClient, PaymentType, RegistrationStatus, StrSeverity, StrStatus, UserRole, VehicleStatus } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import {
+  AuditAction,
+  PaymentType,
+  PrismaClient,
+  RegistrationStatus,
+  StrSeverity,
+  StrStatus,
+  UserRole,
+  VehicleStatus,
+} from '@prisma/client';
+import { getDatabaseUrlFromEnv } from '../src/config/database-url.util';
 
+process.env.DATABASE_URL = getDatabaseUrlFromEnv(process.env);
 const prisma = new PrismaClient();
+const DEFAULT_PASSWORD_HASH = '$2a$10$3wM68e0hhCJ.xIMVNU.nkOWBpXXYNgD3VlFrkzNmGtcvpFkNCETyi';
 
 async function main() {
+  await prisma.idempotencyKey.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.registrationRecord.deleteMany();
   await prisma.strAlert.deleteMany();
@@ -14,185 +26,625 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.buyer.deleteMany();
   await prisma.dealer.deleteMany();
-  await prisma.idempotencyKey.deleteMany();
 
-  const [activeDealer, suspendedDealer] = await prisma.$transaction([
-    prisma.dealer.create({
-      data: {
+  await prisma.dealer.createMany({
+    data: [
+      {
+        id: 1,
         name: 'Harare Auto Hub',
         licenseNumber: 'DLR-001',
         status: 'ACTIVE',
         address: '12 Samora Machel Ave, Harare',
         contactInfo: '+263-77-000-0001',
-        approvedAt: new Date('2026-01-15'),
+        approvedAt: new Date('2026-01-15T00:00:00.000Z'),
+        createdAt: new Date('2026-04-11T21:29:43.989Z'),
+        updatedAt: new Date('2026-04-11T21:29:43.989Z'),
       },
-    }),
-    prisma.dealer.create({
-      data: {
+      {
+        id: 2,
         name: 'Bulawayo Motor Traders',
         licenseNumber: 'DLR-002',
-        status: 'SUSPENDED',
+        status: 'ACTIVE',
         address: '45 Jason Moyo St, Bulawayo',
         contactInfo: '+263-77-000-0002',
-        approvedAt: new Date('2026-01-20'),
+        approvedAt: new Date('2026-01-20T00:00:00.000Z'),
+        createdAt: new Date('2026-04-11T21:29:43.989Z'),
+        updatedAt: new Date('2026-04-16T22:08:02.442Z'),
       },
-    }),
-  ]);
+    ],
+  });
 
-  const passwordHash = await bcrypt.hash('ChangeMe123!', 10);
-
-  const users = await prisma.$transaction([
-    prisma.user.create({
-      data: {
+  await prisma.user.createMany({
+    data: [
+      {
+        id: 1,
         fullName: 'System Admin',
         role: UserRole.ADMIN,
         agency: 'VARMS',
         username: 'admin',
-        passwordHash,
+        passwordHash: DEFAULT_PASSWORD_HASH,
+        dealershipId: null,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-04-11T21:29:44.127Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.127Z'),
       },
-    }),
-    prisma.user.create({
-      data: {
+      {
+        id: 2,
         fullName: 'ZIMRA Officer',
         role: UserRole.ZIMRA_OFFICER,
         agency: 'ZIMRA',
         username: 'zimra',
-        passwordHash,
+        passwordHash: DEFAULT_PASSWORD_HASH,
+        dealershipId: null,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-04-11T21:29:44.127Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.127Z'),
       },
-    }),
-    prisma.user.create({
-      data: {
+      {
+        id: 3,
         fullName: 'Dealer User',
         role: UserRole.DEALER,
         agency: 'Harare Auto Hub',
         username: 'dealer',
-        passwordHash,
-        dealershipId: activeDealer.id,
+        passwordHash: DEFAULT_PASSWORD_HASH,
+        dealershipId: 1,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-04-11T21:29:44.127Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.127Z'),
       },
-    }),
-    prisma.user.create({
-      data: {
+      {
+        id: 4,
         fullName: 'CVR Officer',
         role: UserRole.CVR_OFFICER,
         agency: 'CVR',
         username: 'cvr',
-        passwordHash,
+        passwordHash: DEFAULT_PASSWORD_HASH,
+        dealershipId: null,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-04-11T21:29:44.127Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.127Z'),
       },
-    }),
-    prisma.user.create({
-      data: {
+      {
+        id: 5,
         fullName: 'FIU Analyst',
         role: UserRole.FIU_ANALYST,
         agency: 'FIU',
         username: 'fiu',
-        passwordHash,
+        passwordHash: DEFAULT_PASSWORD_HASH,
+        dealershipId: null,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-04-11T21:29:44.127Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.127Z'),
       },
-    }),
-  ]);
+    ],
+  });
 
-  const buyers = await prisma.$transaction([
-    prisma.buyer.create({
-      data: {
+  await prisma.buyer.createMany({
+    data: [
+      {
+        id: 1,
         fullName: 'Tawanda Moyo',
         nationalId: '63-111111-A-63',
         contactDetails: '+263-77-111-1111',
+        createdAt: new Date('2026-04-11T21:29:44.148Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.148Z'),
       },
-    }),
-    prisma.buyer.create({
-      data: {
+      {
+        id: 2,
         fullName: 'Nominee Buyer',
         nationalId: '12-222222-B-12',
         contactDetails: '+263-77-222-2222',
+        createdAt: new Date('2026-04-11T21:29:44.148Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.148Z'),
       },
-    }),
-  ]);
-
-  const vehicle = await prisma.vehicle.create({
-    data: {
-      vin: 'JH4KA8260MC000001',
-      make: 'Toyota',
-      model: 'Hilux',
-      declaredValue: 12000,
-      countryOfOrigin: 'Japan',
-      importDate: new Date('2026-03-05'),
-      dealershipId: activeDealer.id,
-      status: VehicleStatus.SOLD,
-    },
-  });
-
-  await prisma.importRecord.create({
-    data: {
-      vehicleId: vehicle.id,
-      officerId: users[1].id,
-      borderPost: 'Beitbridge',
-      timestamp: new Date('2026-03-05T10:00:00Z'),
-    },
-  });
-
-  const sale = await prisma.saleTransaction.create({
-    data: {
-      vehicleId: vehicle.id,
-      dealershipId: activeDealer.id,
-      buyerId: buyers[0].id,
-      salePrice: 18000,
-      paymentType: PaymentType.CASH,
-      proofOfPayment: 'BANKSLIP-001',
-      saleDate: new Date('2026-03-18'),
-      isActingForAnother: false,
-    },
-  });
-
-  await prisma.strAlert.create({
-    data: {
-      alertType: 'CASH_THRESHOLD',
-      sourceRecordId: sale.id,
-      sourceEntityType: 'sale_transaction',
-      reason: 'Cash sale exceeds threshold',
-      severity: StrSeverity.HIGH,
-      status: StrStatus.PENDING,
-      vehicleId: vehicle.id,
-      dealershipId: activeDealer.id,
-      buyerId: buyers[0].id,
-      transactionValue: 18000,
-    },
-  });
-
-  await prisma.registrationRecord.create({
-    data: {
-      vehicleId: vehicle.id,
-      buyerId: buyers[0].id,
-      officerId: users[3].id,
-      registrationDate: new Date('2026-03-25'),
-      status: RegistrationStatus.APPROVED,
-    },
+      {
+        id: 3,
+        fullName: 'Makanaka',
+        nationalId: '9823492849',
+        contactDetails: '2525252',
+        createdAt: new Date('2026-04-12T19:13:32.489Z'),
+        updatedAt: new Date('2026-04-17T10:11:24.729Z'),
+      },
+    ],
   });
 
   await prisma.vehicle.createMany({
     data: [
       {
+        id: 1,
+        vin: 'JH4KA8260MC000001',
+        make: 'Toyota',
+        model: 'Hilux',
+        declaredValue: '12000',
+        countryOfOrigin: 'Japan',
+        importDate: new Date('2026-03-05T00:00:00.000Z'),
+        dealershipId: 1,
+        status: VehicleStatus.SOLD,
+        createdAt: new Date('2026-04-11T21:29:44.159Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.159Z'),
+      },
+      {
+        id: 2,
         vin: 'JH4KA8260MC000002',
         make: 'Nissan',
         model: 'Navara',
-        declaredValue: 15000,
+        declaredValue: '15000',
         countryOfOrigin: 'Japan',
-        importDate: new Date('2026-04-01'),
-        dealershipId: activeDealer.id,
-        status: VehicleStatus.INVENTORY,
+        importDate: new Date('2026-04-01T00:00:00.000Z'),
+        dealershipId: 1,
+        status: VehicleStatus.STR_FLAGGED,
+        createdAt: new Date('2026-04-11T21:29:44.209Z'),
+        updatedAt: new Date('2026-04-17T10:11:24.835Z'),
       },
       {
+        id: 3,
         vin: 'JH4KA8260MC000003',
         make: 'Mazda',
         model: 'BT-50',
-        declaredValue: 11000,
+        declaredValue: '11000',
         countryOfOrigin: 'Thailand',
-        importDate: new Date('2026-04-03'),
-        dealershipId: suspendedDealer.id,
+        importDate: new Date('2026-04-03T00:00:00.000Z'),
+        dealershipId: 2,
         status: VehicleStatus.INVENTORY,
+        createdAt: new Date('2026-04-11T21:29:44.209Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.209Z'),
+      },
+      {
+        id: 4,
+        vin: '76876876876987897',
+        make: 'Nissan',
+        model: 'Patrol',
+        declaredValue: '12000',
+        countryOfOrigin: 'China',
+        importDate: new Date('2026-04-12T00:00:00.000Z'),
+        dealershipId: 1,
+        status: VehicleStatus.REGISTERED,
+        createdAt: new Date('2026-04-12T19:10:39.827Z'),
+        updatedAt: new Date('2026-04-12T19:17:31.269Z'),
+      },
+      {
+        id: 5,
+        vin: '87666767676887677',
+        make: 'Toyota',
+        model: 'Corolla',
+        declaredValue: '8000',
+        countryOfOrigin: 'Japan',
+        importDate: new Date('2026-04-12T00:00:00.000Z'),
+        dealershipId: 1,
+        status: VehicleStatus.SOLD,
+        createdAt: new Date('2026-04-12T19:22:41.882Z'),
+        updatedAt: new Date('2026-04-12T19:25:03.202Z'),
       },
     ],
   });
 
-  console.log('Seeded VARMS backend data');
+  await prisma.importRecord.createMany({
+    data: [
+      {
+        id: 1,
+        vehicleId: 1,
+        officerId: 2,
+        borderPost: 'Beitbridge',
+        timestamp: new Date('2026-03-05T10:00:00.000Z'),
+        createdAt: new Date('2026-04-11T21:29:44.171Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.171Z'),
+      },
+      {
+        id: 2,
+        vehicleId: 4,
+        officerId: 2,
+        borderPost: 'Beitbridge',
+        timestamp: new Date('2026-04-12T19:10:39.912Z'),
+        createdAt: new Date('2026-04-12T19:10:39.915Z'),
+        updatedAt: new Date('2026-04-12T19:10:39.915Z'),
+      },
+      {
+        id: 3,
+        vehicleId: 5,
+        officerId: 2,
+        borderPost: 'Beitbridge',
+        timestamp: new Date('2026-04-12T19:22:41.895Z'),
+        createdAt: new Date('2026-04-12T19:22:41.898Z'),
+        updatedAt: new Date('2026-04-12T19:22:41.898Z'),
+      },
+    ],
+  });
+
+  await prisma.saleTransaction.createMany({
+    data: [
+      {
+        id: 1,
+        vehicleId: 1,
+        dealershipId: 1,
+        buyerId: 1,
+        salePrice: '18000',
+        paymentType: PaymentType.CASH,
+        proofOfPayment: 'BANKSLIP-001',
+        saleDate: new Date('2026-03-18T00:00:00.000Z'),
+        isActingForAnother: false,
+        createdAt: new Date('2026-04-11T21:29:44.181Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.181Z'),
+      },
+      {
+        id: 2,
+        vehicleId: 4,
+        dealershipId: 1,
+        buyerId: 3,
+        salePrice: '12000',
+        paymentType: PaymentType.CASH,
+        proofOfPayment: 'YT238',
+        saleDate: new Date('2026-04-12T00:00:00.000Z'),
+        isActingForAnother: false,
+        createdAt: new Date('2026-04-12T19:13:32.504Z'),
+        updatedAt: new Date('2026-04-12T19:13:32.504Z'),
+      },
+      {
+        id: 3,
+        vehicleId: 5,
+        dealershipId: 1,
+        buyerId: 3,
+        salePrice: '8000',
+        paymentType: PaymentType.CASH,
+        proofOfPayment: '2r232',
+        saleDate: new Date('2026-04-12T00:00:00.000Z'),
+        isActingForAnother: false,
+        createdAt: new Date('2026-04-12T19:25:03.190Z'),
+        updatedAt: new Date('2026-04-12T19:25:03.190Z'),
+      },
+      {
+        id: 4,
+        vehicleId: 2,
+        dealershipId: 1,
+        buyerId: 3,
+        salePrice: '15000',
+        paymentType: PaymentType.CASH,
+        proofOfPayment: 'GWE523',
+        saleDate: new Date('2026-04-17T00:00:00.000Z'),
+        isActingForAnother: false,
+        createdAt: new Date('2026-04-17T10:11:24.770Z'),
+        updatedAt: new Date('2026-04-17T10:11:24.770Z'),
+      },
+    ],
+  });
+
+  await prisma.strAlert.createMany({
+    data: [
+      {
+        id: 1,
+        alertType: 'CASH_THRESHOLD',
+        sourceRecordId: 1,
+        sourceEntityType: 'sale_transaction',
+        reason: 'Cash sale exceeds threshold',
+        severity: StrSeverity.HIGH,
+        status: StrStatus.ESCALATED,
+        vehicleId: 1,
+        dealershipId: 1,
+        buyerId: 1,
+        transactionValue: '18000',
+        createdAt: new Date('2026-04-11T21:29:44.190Z'),
+        updatedAt: new Date('2026-04-12T19:20:11.175Z'),
+      },
+      {
+        id: 2,
+        alertType: 'CASH_THRESHOLD',
+        sourceRecordId: 2,
+        sourceEntityType: 'sale_transaction',
+        reason: 'Cash sale exceeds threshold of 10000',
+        severity: StrSeverity.HIGH,
+        status: StrStatus.DISMISSED,
+        vehicleId: 4,
+        dealershipId: 1,
+        buyerId: 3,
+        transactionValue: '12000',
+        createdAt: new Date('2026-04-12T19:13:32.683Z'),
+        updatedAt: new Date('2026-04-12T19:19:23.353Z'),
+      },
+      {
+        id: 3,
+        alertType: 'CASH_THRESHOLD',
+        sourceRecordId: 4,
+        sourceEntityType: 'sale_transaction',
+        reason: 'Cash sale exceeds threshold of 10000',
+        severity: StrSeverity.HIGH,
+        status: StrStatus.PENDING,
+        vehicleId: 2,
+        dealershipId: 1,
+        buyerId: 3,
+        transactionValue: '15000',
+        createdAt: new Date('2026-04-17T10:11:24.815Z'),
+        updatedAt: new Date('2026-04-17T10:11:24.815Z'),
+      },
+      {
+        id: 4,
+        alertType: 'NOMINEE_PATTERN',
+        sourceRecordId: 4,
+        sourceEntityType: 'sale_transaction',
+        reason: 'Buyer appears in 3 purchases within 90 days',
+        severity: StrSeverity.CRITICAL,
+        status: StrStatus.PENDING,
+        vehicleId: 2,
+        dealershipId: 1,
+        buyerId: 3,
+        transactionValue: '15000',
+        createdAt: new Date('2026-04-17T10:11:24.826Z'),
+        updatedAt: new Date('2026-04-17T10:11:24.826Z'),
+      },
+    ],
+  });
+
+  await prisma.registrationRecord.createMany({
+    data: [
+      {
+        id: 1,
+        vehicleId: 1,
+        buyerId: 1,
+        officerId: 4,
+        registrationDate: new Date('2026-03-25T00:00:00.000Z'),
+        status: RegistrationStatus.APPROVED,
+        createdAt: new Date('2026-04-11T21:29:44.200Z'),
+        updatedAt: new Date('2026-04-11T21:29:44.200Z'),
+      },
+      {
+        id: 2,
+        vehicleId: 4,
+        buyerId: 3,
+        officerId: 4,
+        registrationDate: new Date('2026-04-12T00:00:00.000Z'),
+        status: RegistrationStatus.APPROVED,
+        createdAt: new Date('2026-04-12T19:17:31.251Z'),
+        updatedAt: new Date('2026-04-12T19:17:31.251Z'),
+      },
+    ],
+  });
+
+  await prisma.auditLog.createMany({
+    data: [
+      {
+        id: 1,
+        userId: 1,
+        role: 'ADMIN',
+        action: AuditAction.UPDATE,
+        entityType: 'dealer',
+        entityId: 2,
+        beforeValue: {
+          id: 2,
+          name: 'Bulawayo Motor Traders',
+          status: 'SUSPENDED',
+          address: '45 Jason Moyo St, Bulawayo',
+          created_at: '2026-04-11T21:29:43.989Z',
+          updated_at: '2026-04-16T22:07:04.913Z',
+          approved_at: '2026-01-20T00:00:00.000Z',
+          contact_info: '+263-77-000-0002',
+          license_number: 'DLR-002',
+        },
+        afterValue: {
+          id: 2,
+          name: 'Bulawayo Motor Traders',
+          status: 'ACTIVE',
+          address: '45 Jason Moyo St, Bulawayo',
+          created_at: '2026-04-11T21:29:43.989Z',
+          updated_at: '2026-04-16T22:08:02.442Z',
+          approved_at: '2026-01-20T00:00:00.000Z',
+          contact_info: '+263-77-000-0002',
+          license_number: 'DLR-002',
+        },
+        reason: 'Audit log verification',
+        timestamp: new Date('2026-04-16T22:08:02.459Z'),
+        createdAt: new Date('2026-04-16T22:08:02.461Z'),
+      },
+      {
+        id: 2,
+        userId: 3,
+        role: 'DEALER',
+        action: AuditAction.CREATE,
+        entityType: 'sale_transaction',
+        entityId: 4,
+        beforeValue: null,
+        afterValue: {
+          id: 4,
+          buyer_id: 3,
+          sale_date: '2026-04-17T00:00:00.000Z',
+          created_at: '2026-04-17T10:11:24.770Z',
+          sale_price: 15000,
+          updated_at: '2026-04-17T10:11:24.770Z',
+          vehicle_id: 2,
+          payment_type: 'CASH',
+          dealership_id: 1,
+          proof_of_payment: 'GWE523',
+          is_acting_for_another: false,
+        },
+        reason: null,
+        timestamp: new Date('2026-04-17T10:11:24.846Z'),
+        createdAt: new Date('2026-04-17T10:11:24.848Z'),
+      },
+    ],
+  });
+
+  await prisma.idempotencyKey.createMany({
+    data: [
+      {
+        id: 1,
+        userId: 2,
+        route: '/api/v1/vehicles/import',
+        method: 'POST',
+        idempotencyKey: 'efe9419a-cce6-472f-85e1-85e633d4cfc6',
+        responseCode: 201,
+        responseBody: {
+          data: {
+            vehicle: {
+              id: 4,
+              vin: '76876876876987897',
+              make: 'Nissan',
+              model: 'Patrol',
+              status: 'INVENTORY',
+              created_at: '2026-04-12T19:10:39.827Z',
+              updated_at: '2026-04-12T19:10:39.827Z',
+              import_date: '2026-04-12T00:00:00.000Z',
+              dealership_id: 1,
+              declared_value: 12000,
+              country_of_origin: 'China',
+            },
+            import_record: {
+              id: 2,
+              timestamp: '2026-04-12T19:10:39.912Z',
+              created_at: '2026-04-12T19:10:39.915Z',
+              officer_id: 2,
+              updated_at: '2026-04-12T19:10:39.915Z',
+              vehicle_id: 4,
+              border_post: 'Beitbridge',
+            },
+          },
+          error: null,
+          success: true,
+        },
+        createdAt: new Date('2026-04-12T19:10:39.957Z'),
+        updatedAt: new Date('2026-04-12T19:10:39.957Z'),
+      },
+      {
+        id: 2,
+        userId: 3,
+        route: '/api/v1/sales',
+        method: 'POST',
+        idempotencyKey: '84cab5d5-0e96-4bdd-b892-134da6176d44',
+        responseCode: 201,
+        responseBody: {
+          data: {
+            id: 2,
+            buyer_id: 3,
+            sale_date: '2026-04-12T00:00:00.000Z',
+            created_at: '2026-04-12T19:13:32.504Z',
+            sale_price: 12000,
+            updated_at: '2026-04-12T19:13:32.504Z',
+            vehicle_id: 4,
+            payment_type: 'CASH',
+            dealership_id: 1,
+            proof_of_payment: 'YT238',
+            is_acting_for_another: false,
+          },
+          error: null,
+          success: true,
+        },
+        createdAt: new Date('2026-04-12T19:13:32.723Z'),
+        updatedAt: new Date('2026-04-12T19:13:32.723Z'),
+      },
+      {
+        id: 3,
+        userId: 4,
+        route: '/api/v1/registration/approve',
+        method: 'POST',
+        idempotencyKey: '8964e47d-2e2d-4547-b961-62930ad60bc1',
+        responseCode: 201,
+        responseBody: {
+          data: {
+            id: 2,
+            status: 'APPROVED',
+            buyer_id: 3,
+            officer_id: 4,
+            vehicle_id: 4,
+            registration_date: '2026-04-12T00:00:00.000Z',
+          },
+          error: null,
+          success: true,
+        },
+        createdAt: new Date('2026-04-12T19:17:31.302Z'),
+        updatedAt: new Date('2026-04-12T19:17:31.302Z'),
+      },
+      {
+        id: 4,
+        userId: 2,
+        route: '/api/v1/vehicles/import',
+        method: 'POST',
+        idempotencyKey: '914d748b-85da-4051-b2df-089817d9b68f',
+        responseCode: 201,
+        responseBody: {
+          data: {
+            vehicle: {
+              id: 5,
+              vin: '87666767676887677',
+              make: 'Toyota',
+              model: 'Corolla',
+              status: 'INVENTORY',
+              created_at: '2026-04-12T19:22:41.882Z',
+              updated_at: '2026-04-12T19:22:41.882Z',
+              import_date: '2026-04-12T00:00:00.000Z',
+              dealership_id: 1,
+              declared_value: 8000,
+              country_of_origin: 'Japan',
+            },
+            import_record: {
+              id: 3,
+              timestamp: '2026-04-12T19:22:41.895Z',
+              created_at: '2026-04-12T19:22:41.898Z',
+              officer_id: 2,
+              updated_at: '2026-04-12T19:22:41.898Z',
+              vehicle_id: 5,
+              border_post: 'Beitbridge',
+            },
+          },
+          error: null,
+          success: true,
+        },
+        createdAt: new Date('2026-04-12T19:22:41.922Z'),
+        updatedAt: new Date('2026-04-12T19:22:41.922Z'),
+      },
+      {
+        id: 5,
+        userId: 3,
+        route: '/api/v1/sales',
+        method: 'POST',
+        idempotencyKey: 'fa69ac73-69af-48f2-8ef1-99c8ffe6ed8a',
+        responseCode: 201,
+        responseBody: {
+          data: {
+            id: 3,
+            buyer_id: 3,
+            sale_date: '2026-04-12T00:00:00.000Z',
+            created_at: '2026-04-12T19:25:03.190Z',
+            sale_price: 8000,
+            updated_at: '2026-04-12T19:25:03.190Z',
+            vehicle_id: 5,
+            payment_type: 'CASH',
+            dealership_id: 1,
+            proof_of_payment: '2r232',
+            is_acting_for_another: false,
+          },
+          error: null,
+          success: true,
+        },
+        createdAt: new Date('2026-04-12T19:25:03.244Z'),
+        updatedAt: new Date('2026-04-12T19:25:03.244Z'),
+      },
+      {
+        id: 6,
+        userId: 3,
+        route: '/api/v1/sales',
+        method: 'POST',
+        idempotencyKey: '75f759f1-0713-4630-add1-b74d8b9f3bfd',
+        responseCode: 201,
+        responseBody: {
+          data: {
+            id: 4,
+            buyer_id: 3,
+            sale_date: '2026-04-17T00:00:00.000Z',
+            created_at: '2026-04-17T10:11:24.770Z',
+            sale_price: 15000,
+            updated_at: '2026-04-17T10:11:24.770Z',
+            vehicle_id: 2,
+            payment_type: 'CASH',
+            dealership_id: 1,
+            proof_of_payment: 'GWE523',
+            is_acting_for_another: false,
+          },
+          error: null,
+          success: true,
+        },
+        createdAt: new Date('2026-04-17T10:11:24.875Z'),
+        updatedAt: new Date('2026-04-17T10:11:24.875Z'),
+      },
+    ],
+  });
+
+  console.log('Seeded VARMS backend data from the current default SQLite dataset');
 }
 
 main()
