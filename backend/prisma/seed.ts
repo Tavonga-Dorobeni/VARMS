@@ -14,7 +14,162 @@ process.env.DATABASE_URL = getDatabaseUrlFromEnv(process.env);
 const prisma = new PrismaClient();
 const DEFAULT_PASSWORD_HASH = '$2a$10$3wM68e0hhCJ.xIMVNU.nkOWBpXXYNgD3VlFrkzNmGtcvpFkNCETyi';
 
+async function ensureSqliteSchema() {
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS "dealers" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "name" TEXT NOT NULL,
+      "license_number" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+      "address" TEXT NOT NULL,
+      "contact_info" TEXT NOT NULL,
+      "approved_at" DATETIME NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "uq_dealers_license_number" ON "dealers"("license_number")`,
+    `CREATE TABLE IF NOT EXISTS "users" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "full_name" TEXT NOT NULL,
+      "role" TEXT NOT NULL,
+      "agency" TEXT NOT NULL,
+      "username" TEXT NOT NULL,
+      "password_hash" TEXT NOT NULL,
+      "dealership_id" INTEGER,
+      "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "users_dealership_id_fkey" FOREIGN KEY ("dealership_id") REFERENCES "dealers" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "uq_users_username" ON "users"("username")`,
+    `CREATE TABLE IF NOT EXISTS "buyers" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "full_name" TEXT NOT NULL,
+      "national_id" TEXT NOT NULL,
+      "contact_details" TEXT NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "uq_buyers_national_id" ON "buyers"("national_id")`,
+    `CREATE TABLE IF NOT EXISTS "vehicles" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "vin" TEXT NOT NULL,
+      "make" TEXT NOT NULL,
+      "model" TEXT NOT NULL,
+      "declared_value" DECIMAL NOT NULL,
+      "country_of_origin" TEXT NOT NULL,
+      "import_date" DATETIME NOT NULL,
+      "dealership_id" INTEGER NOT NULL,
+      "status" TEXT NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "vehicles_dealership_id_fkey" FOREIGN KEY ("dealership_id") REFERENCES "dealers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "uq_vehicles_vin" ON "vehicles"("vin")`,
+    `CREATE TABLE IF NOT EXISTS "import_records" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "vehicle_id" INTEGER NOT NULL,
+      "officer_id" INTEGER NOT NULL,
+      "border_post" TEXT NOT NULL,
+      "timestamp" DATETIME NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "import_records_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+      CONSTRAINT "import_records_officer_id_fkey" FOREIGN KEY ("officer_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "sale_transactions" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "vehicle_id" INTEGER NOT NULL,
+      "dealership_id" INTEGER NOT NULL,
+      "buyer_id" INTEGER NOT NULL,
+      "sale_price" DECIMAL NOT NULL,
+      "payment_type" TEXT NOT NULL,
+      "proof_of_payment" TEXT NOT NULL,
+      "sale_date" DATETIME NOT NULL,
+      "is_acting_for_another" BOOLEAN NOT NULL DEFAULT false,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "sale_transactions_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+      CONSTRAINT "sale_transactions_dealership_id_fkey" FOREIGN KEY ("dealership_id") REFERENCES "dealers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+      CONSTRAINT "sale_transactions_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "buyers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "beneficial_owners" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "linked_buyer_id" INTEGER NOT NULL,
+      "full_name" TEXT NOT NULL,
+      "national_id" TEXT NOT NULL,
+      "relationship_type" TEXT NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "beneficial_owners_linked_buyer_id_fkey" FOREIGN KEY ("linked_buyer_id") REFERENCES "buyers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "str_alerts" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "alert_type" TEXT NOT NULL,
+      "source_record_id" INTEGER NOT NULL,
+      "source_entity_type" TEXT NOT NULL,
+      "reason" TEXT NOT NULL,
+      "severity" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'PENDING',
+      "vehicle_id" INTEGER,
+      "dealership_id" INTEGER,
+      "buyer_id" INTEGER,
+      "transaction_value" DECIMAL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "str_alerts_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+      CONSTRAINT "str_alerts_dealership_id_fkey" FOREIGN KEY ("dealership_id") REFERENCES "dealers" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+      CONSTRAINT "str_alerts_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "buyers" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "registration_records" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "vehicle_id" INTEGER NOT NULL,
+      "buyer_id" INTEGER NOT NULL,
+      "officer_id" INTEGER NOT NULL,
+      "registration_date" DATETIME NOT NULL,
+      "status" TEXT NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "registration_records_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+      CONSTRAINT "registration_records_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "buyers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+      CONSTRAINT "registration_records_officer_id_fkey" FOREIGN KEY ("officer_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "audit_logs" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "user_id" INTEGER NOT NULL,
+      "role" TEXT NOT NULL,
+      "action" TEXT NOT NULL,
+      "entity_type" TEXT NOT NULL,
+      "entity_id" INTEGER NOT NULL,
+      "before_value" TEXT,
+      "after_value" TEXT,
+      "reason" TEXT,
+      "timestamp" DATETIME NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "idempotency_keys" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "user_id" INTEGER,
+      "route" TEXT NOT NULL,
+      "method" TEXT NOT NULL,
+      "idempotency_key" TEXT NOT NULL,
+      "response_code" INTEGER NOT NULL,
+      "response_body" TEXT NOT NULL,
+      "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" DATETIME NOT NULL,
+      CONSTRAINT "idempotency_keys_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "uq_idempotency_request" ON "idempotency_keys"("user_id", "route", "method", "idempotency_key")`,
+  ];
+
+  for (const statement of statements) {
+    await prisma.$executeRawUnsafe(statement);
+  }
+}
+
 async function main() {
+  await ensureSqliteSchema();
   await prisma.idempotencyKey.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.registrationRecord.deleteMany();
