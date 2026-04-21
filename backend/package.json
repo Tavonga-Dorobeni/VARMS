@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "start": "node dist/src/main.js",
+    "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "jest --runInBand",
@@ -13,7 +13,10 @@
     "test:cov": "jest --coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:push": "prisma db push",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:generate:mysql-source": "prisma generate --schema prisma/mysql-source.prisma",
+    "db:migrate:mysql-to-sqlite": "tsx prisma/migrate-mysql-to-sqlite.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
