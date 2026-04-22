@@ -1,6 +1,8 @@
 <script setup lang="ts">
+export type BadgeVariant = 'success' | 'warning' | 'danger' | 'critical' | 'info' | 'muted'
+
 defineProps<{
-  variant?: 'success' | 'warning' | 'danger' | 'critical' | 'info' | 'muted'
+  variant?: BadgeVariant
   size?: 'sm' | 'md'
 }>()
 </script>

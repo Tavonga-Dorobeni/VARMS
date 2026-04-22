@@ -54,7 +54,7 @@ async function handleSave(data: Record<string, unknown>) {
     if (editingUser.value) {
       await updateUser(editingUser.value.id, data)
     } else {
-      await createUser(data as Parameters<typeof createUser>[0])
+      await createUser(data as unknown as Parameters<typeof createUser>[0])
     }
     formOpen.value = false
     fetchUsers()

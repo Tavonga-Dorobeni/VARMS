@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import VCard from '@/components/ui/VCard.vue'
 import VButton from '@/components/ui/VButton.vue'
-import VBadge from '@/components/ui/VBadge.vue'
+import VBadge, { type BadgeVariant } from '@/components/ui/VBadge.vue'
 import VSpinner from '@/components/ui/VSpinner.vue'
 import { useQuery } from '@/composables/useApi'
 import type { PaginatedData } from '@/types/api'
@@ -18,7 +18,7 @@ const { data, loading } = useQuery<PaginatedData<StrAlert>>(
 
 const alerts = computed(() => data.value?.items ?? [])
 
-const severityVariant: Record<string, string> = {
+const severityVariant: Record<string, BadgeVariant> = {
   LOW: 'info',
   MEDIUM: 'warning',
   HIGH: 'danger',

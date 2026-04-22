@@ -17,7 +17,7 @@ defineProps<{
 
 defineEmits<{
   'update:salePrice': [value: string]
-  'update:paymentType': [value: string]
+  'update:paymentType': [value: PaymentType | '']
   'update:proofOfPayment': [value: string]
   'update:saleDate': [value: string]
   'update:isActingForAnother': [value: boolean]
@@ -44,7 +44,7 @@ const paymentOptions = [
         placeholder="Select payment type"
         required
         :error="errors?.payment_type"
-        @update:model-value="$emit('update:paymentType', $event)"
+        @update:model-value="$emit('update:paymentType', $event as PaymentType | '')"
       />
 
       <VInput

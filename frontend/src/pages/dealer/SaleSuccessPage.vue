@@ -45,7 +45,7 @@ function formatCurrency(value: string | number): string {
             </div>
             <div class="success-details__row">
               <dt>Buyer</dt>
-              <dd>{{ sale.buyer_full_name }}</dd>
+              <dd>{{ sale.buyer?.full_name ?? '—' }}</dd>
             </div>
             <div class="success-details__row">
               <dt>Amount</dt>

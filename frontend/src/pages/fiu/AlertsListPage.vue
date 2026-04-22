@@ -5,7 +5,7 @@ import AppShell from '@/layouts/AppShell.vue'
 import DataTable from '@/components/shared/DataTable.vue'
 import type { DataTableColumn } from '@/components/shared/DataTable.vue'
 import AlertFilters from '@/components/filters/AlertFilters.vue'
-import VBadge from '@/components/ui/VBadge.vue'
+import VBadge, { type BadgeVariant } from '@/components/ui/VBadge.vue'
 import { usePaginatedQuery } from '@/composables/useApi'
 import type { StrAlert } from '@/types/models'
 
@@ -61,14 +61,14 @@ function formatCurrency(value: number | string | null): string {
   return `US$ ${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 }
 
-const severityVariant: Record<string, string> = {
+const severityVariant: Record<string, BadgeVariant> = {
   LOW: 'info',
   MEDIUM: 'warning',
   HIGH: 'danger',
   CRITICAL: 'critical',
 }
 
-const statusVariant: Record<string, string> = {
+const statusVariant: Record<string, BadgeVariant> = {
   PENDING: 'warning',
   UNDER_REVIEW: 'info',
   DISMISSED: 'muted',

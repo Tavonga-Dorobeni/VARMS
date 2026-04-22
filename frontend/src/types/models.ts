@@ -61,6 +61,7 @@ export interface ImportRecord {
   created_at: string
   updated_at: string
   officer?: User
+  vehicle?: Vehicle
 }
 
 export interface Buyer {

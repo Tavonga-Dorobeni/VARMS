@@ -7,7 +7,7 @@ import VButton from '@/components/ui/VButton.vue'
 import VSelect from '@/components/ui/VSelect.vue'
 import VTextarea from '@/components/ui/VTextarea.vue'
 import VSpinner from '@/components/ui/VSpinner.vue'
-import VBadge from '@/components/ui/VBadge.vue'
+import VBadge, { type BadgeVariant } from '@/components/ui/VBadge.vue'
 import { getAlertById, updateAlertStatus } from '@/services/str-alerts.service'
 import { StrStatus } from '@/types/enums'
 import type { StrAlert } from '@/types/models'
@@ -31,14 +31,14 @@ const statusOptions = [
   { value: StrStatus.ESCALATED, label: 'Escalated' },
 ]
 
-const severityVariant: Record<string, string> = {
+const severityVariant: Record<string, BadgeVariant> = {
   LOW: 'info',
   MEDIUM: 'warning',
   HIGH: 'danger',
   CRITICAL: 'critical',
 }
 
-const statusVariant: Record<string, string> = {
+const statusVariant: Record<string, BadgeVariant> = {
   PENDING: 'warning',
   UNDER_REVIEW: 'info',
   DISMISSED: 'muted',

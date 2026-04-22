@@ -5,7 +5,7 @@ import type { DataTableColumn } from '@/components/shared/DataTable.vue'
 import VButton from '@/components/ui/VButton.vue'
 import AuditLogFilters from './AuditLogFilters.vue'
 import AuditLogExpandedRow from './AuditLogExpandedRow.vue'
-import VBadge from '@/components/ui/VBadge.vue'
+import VBadge, { type BadgeVariant } from '@/components/ui/VBadge.vue'
 import { usePaginatedQuery } from '@/composables/useApi'
 import { exportAuditLogs } from '@/services/audit-logs.service'
 import type { AuditLog } from '@/types/models'
@@ -55,7 +55,7 @@ function formatTimestamp(ts: string): string {
   })
 }
 
-const actionVariant: Record<string, string> = {
+const actionVariant: Record<string, BadgeVariant> = {
   CREATE: 'success',
   UPDATE: 'info',
   DELETE: 'danger',
