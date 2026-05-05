@@ -58,6 +58,14 @@ export class StrAlertsService {
 
     if (query.status) where.status = query.status as never;
     if (query.alert_type) where.alertType = query.alert_type;
+    if (query.severity) where.severity = query.severity as never;
+    if (query.dealership_search) {
+      where.dealership = {
+        name: {
+          contains: query.dealership_search as string,
+        },
+      };
+    }
     if (query.dealership_id) where.dealershipId = Number(query.dealership_id);
 
     const [items, total] = await this.prisma.$transaction([
